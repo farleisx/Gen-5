@@ -1,36 +1,83 @@
+"use client";
 import { useState } from "react";
-import { useRouter } from "next/router";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [action, setAction] = useState("login");
-  const router = useRouter();
+  const [message, setMessage] = useState("");
 
-  const handleSubmit = async () => {
-    const res = await fetch("/api/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, action })
-    });
-    const data = await res.json();
-    if (!data.error) {
-      localStorage.setItem("ai-user", email);
-      router.push("/dashboard");
-    } else {
-      alert(data.error);
+  const handleLogin = async () => {
+    setMessage("");
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        // Save user in localStorage
+        localStorage.setItem("ai-user", data.userId);
+        localStorage.setItem("ai-credits", data.credits);
+        setMessage(`Welcome! You have ${data.credits} credits.`);
+        // Redirect to dashboard after login
+        setTimeout(() => window.location.href = "/dashboard", 1000);
+      } else {
+        setMessage(`Login failed: ${data.error}`);
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage("Network error. Try again.");
+    }
+  };
+
+  const handleSignup = async () => {
+    setMessage("");
+    try {
+      const res = await fetch("/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        localStorage.setItem("ai-user", data.userId);
+        localStorage.setItem("ai-credits", data.credits);
+        setMessage(`Account created! You have ${data.credits} credits.`);
+        setTimeout(() => window.location.href = "/dashboard", 1000);
+      } else {
+        setMessage(`Signup failed: ${data.error}`);
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage("Network error. Try again.");
     }
   };
 
   return (
-    <div style={{ textAlign: "center", padding: "50px" }}>
-      <h1>{action === "login" ? "Login" : "Sign Up"}</h1>
-      <input type="email" placeholder="Email" onChange={e => setEmail(e.target.value)} /><br />
-      <input type="password" placeholder="Password" onChange={e => setPassword(e.target.value)} /><br />
-      <button onClick={handleSubmit}>{action === "login" ? "Login" : "Sign Up"}</button>
-      <p onClick={() => setAction(action === "login" ? "signup" : "login")} style={{ cursor: "pointer", color: "blue" }}>
-        {action === "login" ? "Create account" : "Already have an account?"}
-      </p>
+    <div style={{ maxWidth: 400, margin: "50px auto", textAlign: "center" }}>
+      <h1>Login / Sign Up</h1>
+      <input
+        type="text"
+        placeholder="Username"
+        value={username}
+        onChange={e => setUsername(e.target.value)}
+        style={{ width: "100%", margin: "8px 0", padding: 8 }}
+      />
+      <input
+        type="password"
+        placeholder="Password"
+        value={password}
+        onChange={e => setPassword(e.target.value)}
+        style={{ width: "100%", margin: "8px 0", padding: 8 }}
+      />
+      <div style={{ marginTop: 10 }}>
+        <button onClick={handleLogin} style={{ marginRight: 8 }}>Login</button>
+        <button onClick={handleSignup}>Sign Up</button>
+      </div>
+      {message && <p style={{ marginTop: 10 }}>{message}</p>}
     </div>
   );
 }
